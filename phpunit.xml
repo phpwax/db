@@ -5,4 +5,10 @@
          colors="true"
          strict="false"
          verbose="false">
+         
+  <testsuites>
+    <testsuite name="Wax DB Component Test Suite">
+      <directory>./Tests/</directory>
+    </testsuite>
+  </testsuites>
 </phpunit>
