@@ -1,5 +1,6 @@
 <?php
 namespace Wax\Db\Tests;
+use Wax\Db\MysqlAdapter;
 
 class DBAdapterTest extends \PHPUnit_Framework_TestCase {
 
