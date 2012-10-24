@@ -1,0 +1,8 @@
+<phpunit backupGlobals="true"
+         backupStaticAttributes="false"
+         bootstrap="./Tests/bootstrap.php"
+         cacheTokens="false"
+         colors="true"
+         strict="false"
+         verbose="false">
+</phpunit>
