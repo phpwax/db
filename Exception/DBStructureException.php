@@ -1,6 +1,5 @@
 <?php
-namespace Wax\Db;
-use Wax\Core\Exception;
+namespace Wax\Db\Exception;
 
 /**
  *
@@ -14,7 +13,8 @@ class DBStructureException extends SqlException {
   </p><p>Check that your database models are setup correctly.</p>";
   
 	function __construct( $message, $code, $query_error = false ) {
-	  if($query_error) $this->help .= " <pre>$query_error</pre>";
+	  if($query_error) $message .= " <pre>$query_error</pre>";
+    $message.=$this->help;
   	parent::__construct( $message, $code);
   }
 }
