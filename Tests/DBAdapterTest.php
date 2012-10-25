@@ -6,7 +6,7 @@ class DBAdapterTest extends \PHPUnit_Framework_TestCase {
 
 
   public function testInit() {
-    $adapter = new MysqlAdapter();
+    $adapter = new MysqlAdapter(['dbtype'=>"none"]);
     $this->assertEquals('foo', "foo");
     
   }
