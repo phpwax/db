@@ -22,27 +22,13 @@ class Backend {
   	"select"         => []
   ];
   
-  public $_schema    = false;
-  public $_data      = false;
   
-  public function __construct($options = []) {
-    if(isset($options['schema'])) $this->_schema = $options['schema'];
+  public $settings   = false;
+  
+  public function __construct($settings=[]) {
+    $this->settings = $settings;
   }
-  
-  public function insert($data) {
-    $this->_data = $data;
-    return $this->exec();
-  }
-  
-  public function update($data) {
-    $this->_data = $data;
-    return $this->exec();
-  }
-  
 
-  public function fetch() {
-    return $this->exec();
-  }
   
   public function __call($method, $params) {
     if(isset($this->query[$method])) {
