@@ -91,6 +91,12 @@ class SQLBackend extends Backend {
     if(!isset($options['table'])) throw new \Exception("Database Error", "Database deletes require a table to be passed");
     
   }
+  
+  public function truncate() {
+    $query = "TRUNCATE `".$this->table."`";
+    $pdo = $this->db()->get_db();
+    $pdo->exec($query);
+  }
 
   
   public function group_delete($options) {
@@ -110,7 +116,7 @@ class SQLBackend extends Backend {
   protected function build_query($query) {
     $finder = $this->db();
     
-    if(isset($query['raw'])) return $finder->rawQuery($query['raw']);
+    if(isset($query['raw'])) return $finder->raw_query($query['raw']);
     
     /*** Select Columns ******/
     if(isset($query['select'])) {

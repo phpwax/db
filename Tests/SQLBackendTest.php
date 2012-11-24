@@ -18,7 +18,8 @@ class SQLBackendTest extends \PHPUnit_Framework_TestCase {
   }
   
   public function teardown() {
-    
+    $backend = new SQLBackend($this->settings);
+    $backend->truncate();    
   }
   
   public function test_basic_query() {
@@ -70,6 +71,22 @@ class SQLBackendTest extends \PHPUnit_Framework_TestCase {
   public function test_delete() {
     
   }
+  
+  public function test_truncate() {
+    $backend = new SQLBackend($this->settings);
+    $save_data = ['data'=>['id'=>55,'key'=>'Test1','value'=>'10'] ];
+    $backend->save($save_data);
+    
+    $check_new_row = $backend->find(55);
+    $this->assertNotEquals(FALSE, $check_new_row);
+    
+    $backend->truncate();
+    $check_new_row = $backend->find(55);
+    $this->assertEquals(FALSE, $check_new_row);
+    
+    
+  }
+ 
 
   
   
