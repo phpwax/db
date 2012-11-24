@@ -5,7 +5,7 @@ namespace Wax\Db\Exception;
  * @package PHP-Wax
  * @author Ross Riley
  **/
-class DbException extends Exception {
+class DBException extends \Exception {
   
   public $help = "<p>The application couldn't initialise a database connection using the following settings:</p>";
   
