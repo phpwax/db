@@ -69,13 +69,48 @@ class SQLBackendTest extends \PHPUnit_Framework_TestCase {
   
   
   public function test_delete() {
+    $backend = new SQLBackend($this->settings);
+    $save_data = ['data'=>['id'=>55,'key'=>'Test1','value'=>'10'] ];
+    $backend->save($save_data);
+    
+    $check_exists = $backend->find(55);
+    $this->assertNotNull($check_exists);
+    $this->assertEquals($check_exists["id"], 55); 
+    
+    $del_query = [
+      'filter'  =>[['id','55']]
+    ];
+    $del_result = $backend->delete($del_query);
+    $this->assertEquals($del_result, 1);     
+  }
+  
+  public function test_multiple_delete() {
+    $backend = new SQLBackend($this->settings);
+    $save_data1 = ['data'=>['id'=>55,'key'=>'Test1','value'=>'10'] ];
+    $save_data2 = ['data'=>['id'=>56,'key'=>'Test1','value'=>'10'] ];
+    $backend->save($save_data1);
+    $backend->save($save_data2);
+    
+    $check_existing = $backend->all();
+    
+    $this->assertEquals(count($check_existing), 2);     
+    
+    
+    $del_query = [
+      'filter'  =>[['id',['55','56']]]
+    ];
+    $del_result = $backend->delete($del_query);
+    
+    $this->assertEquals($del_result, 2); 
     
   }
+  
   
   public function test_truncate() {
     $backend = new SQLBackend($this->settings);
     $save_data = ['data'=>['id'=>55,'key'=>'Test1','value'=>'10'] ];
     $backend->save($save_data);
+      
     
     $check_new_row = $backend->find(55);
     $this->assertNotEquals(FALSE, $check_new_row);

@@ -43,7 +43,7 @@ class SQLBackend extends Backend {
   
   
    
-  public function all($query) {
+  public function all($query=[]) {
     $query = $this->build_query($query);
     return $query->find_many();
   }
@@ -87,9 +87,14 @@ class SQLBackend extends Backend {
        
   }
   
-  public function delete($options) {
-    if(!isset($options['table'])) throw new \Exception("Database Error", "Database deletes require a table to be passed");
-    
+  public function delete($query) {
+    $finder = $this->build_query($query);
+    $resultset = $finder->find_many();
+    $deleted_objects = [];
+    if(count($resultset)) {
+      foreach($resultset as $obj) $deleted_objects[] = $obj->delete();
+    }
+    return count($deleted_objects);
   }
   
   public function truncate() {
@@ -128,7 +133,15 @@ class SQLBackend extends Backend {
     /*** Filters ******/
     if(isset($query['filter'])) {
       foreach($query['filter'] as $fil) {
-        $finder = $finder->where(array_shift($fil),$fil);
+        $key = $fil[0];
+        $value = $fil[1];
+        
+        if(isset($fil[2])) $operator = $fil[2];
+        else $operator = false;
+        
+        if(!is_array($fil[1]) && (!$operator || $operator = '=')) $finder = $finder->where($key,$value);
+        if(is_array($value)) $finder = $finder->where_in($key,$value);
+        
       }
     }
     
