@@ -53,6 +53,13 @@ class SQLBackend extends Backend {
     return $query->find_one();
   }
   
+  public function find($key) {
+    $finder = $this->db();
+    $result = $finder->find_one($key);
+    if($result) return $result->as_array();
+    return false;
+  }
+  
   public function last_query() {
     return Query::get_last_query();
   }
@@ -67,13 +74,17 @@ class SQLBackend extends Backend {
     if(array_key_exists($this->primary_key, $options['data'])) {
       $existing = $this->db()->find_one($options['data'][$this->primary_key]);
     } else $existing = false;
+    
     if($existing) {
-      $existing->hydrate($options['data']);
-      return $existing->save();
+      foreach($options['data'] as $k=>$v) $existing->$k = $v;
+      if($existing->save()) return $existing->as_array();
+      else return false;
     } else {
       $query = $this->db()->create($options['data']);
-      $result = $query->save();
-    }   
+      if($query->save()) return $query->as_array();
+      else return false;
+    }
+       
   }
   
   public function delete($options) {

@@ -24,13 +24,13 @@ class SQLBackendTest extends \PHPUnit_Framework_TestCase {
   public function test_basic_query() {
     $backend = new SQLBackend($this->settings);
     $query = [
-      'filter'  =>[['value','test']],
+      'filter'  =>[['value','10']],
       'limit'   => 5,
       'offset'  => 1,
       'order'   => 'value ASC',
     ];
     
-    $expected = "SELECT * FROM `testing` WHERE `value` = 'test' ORDER BY `value` ASC LIMIT 5 OFFSET 1";
+    $expected = "SELECT * FROM `testing` WHERE `value` = '10' ORDER BY `value` ASC LIMIT 5 OFFSET 1";
     $result = $backend->all($query);
 
     $this->assertEquals($expected, $backend->last_query());    
@@ -41,17 +41,29 @@ class SQLBackendTest extends \PHPUnit_Framework_TestCase {
     $save_data = ['data'=>['key'=>'Test1','value'=>'10'] ];
     $expected = "INSERT INTO `testing` (`key`, `value`) VALUES ('Test1', '10')";
     $res = $backend->save($save_data);
-    $this->assertEquals($expected, $backend->last_query());    
-
+    $this->assertEquals($expected, $backend->last_query()); 
+    $this->assertNotNull($res["id"]);
 
   }
   
   public function test_save_existing() {
     $backend = new SQLBackend($this->settings);
     $save_data = ['data'=>['id'=>55,'key'=>'Test1','value'=>'10'] ];
-    $res = $backend->save($save_data);
+    $res1 = $backend->save($save_data);
+    $this->assertEquals($res1["id"], 55); 
+    
 
+    $res2 = $backend->find(55);
+    $this->assertEquals($res2["value"], "10"); 
+    
+    
+    $save_data = ['data'=>['id'=>55,'key'=>'Test1','value'=>'20'] ];
+    $res3 = $backend->save($save_data);
 
+    $existing = $backend->find(55);
+    $this->assertEquals("20", $existing["value"]); 
+    
+    
   }
   
   
