@@ -3,6 +3,7 @@ namespace Wax\Db\Backends;
 use Wax\Db\Backend;
 use Wax\Db\Configuration;
 use Wax\Db\Exception\DBException;
+use Wax\Db\Exception\DBStructureException;
 use \ORM as Query;
 
 class SQLBackend extends Backend {
@@ -32,6 +33,7 @@ class SQLBackend extends Backend {
     $settings["connection_string"]=$dsn;
     $this->table = $settings['table'];
     if(isset($settings['primary_key'])) $this->primary_key = $settings['primary_key'];
+    $settings["driver_options"] = array(\PDO::MYSQL_ATTR_INIT_COMMAND => "SET SESSION sql_mode='TRADITIONAL'");
     Query::configure($settings);
   }
 
@@ -69,22 +71,44 @@ class SQLBackend extends Backend {
   }
   
   public function save($options) {
-    if(!isset($options['data'])) throw new \Exception("Database Error", "Database saves require a data array to be passed");
+    if(!isset($options['data'])) throw new \InvalidArgumentException("Database saves require a data array to be passed");
     
     if(array_key_exists($this->primary_key, $options['data'])) {
       $existing = $this->db()->find_one($options['data'][$this->primary_key]);
     } else $existing = false;
     
-    if($existing) {
-      foreach($options['data'] as $k=>$v) $existing->$k = $v;
-      if($existing->save()) return $existing->as_array();
-      else return false;
-    } else {
-      $query = $this->db()->create($options['data']);
-      if($query->save()) return $query->as_array();
-      else return false;
+    $success = false;
+    try {
+      // Two paths, if we have an existing row, update it with new data, otherwise create a new row
+      if($existing) {
+        foreach($options['data'] as $k=>$v) $existing->$k = $v;
+        $saver = $existing;        
+      } else $saver = $this->db()->create($options['data']);
+      $success = $saver->save();
+    } catch (\PDOException $e) {
+			switch($e->getCode()) {
+		    case "42S02": 
+          throw new DBStructureException("Database Schema Error",DBStructureException::TABLE_NOT_FOUND,$e);
+          break;
+
+		    case "42S22":
+          throw new DBStructureException("Database Schema Error",DBStructureException::INVALID_COLUMN,$e);
+          break;
+        
+        case "22001":
+          throw new DBStructureException("Database Schema Error",DBStructureException::VALUE_TRUNCATED,$e);
+          break;
+        
+        case "HY000":
+          throw new DBStructureException("Database Schema Error",DBStructureException::INVALID_VALUE,$e);
+          break;
+        
+      }
+      die($e->getCode());
+      throw $e;
     }
-       
+    if($success) return $saver->as_array();
+    return false;
   }
   
   public function delete($query) {

@@ -67,6 +67,12 @@ class SQLBackendTest extends \PHPUnit_Framework_TestCase {
     
   }
   
+  public function test_bad_save_fails() {
+    $this->setExpectedException('InvalidArgumentException');    
+    $backend = new SQLBackend($this->settings);
+    $backend->save([]);
+  }
+  
   
   public function test_delete() {
     $backend = new SQLBackend($this->settings);
@@ -121,8 +127,29 @@ class SQLBackendTest extends \PHPUnit_Framework_TestCase {
     
     
   }
+  
+  
+  public function test_invalid_column() {
+    $backend = new SQLBackend($this->settings);
+    $save_data = ['data'=>['id'=>55,'key'=>'Test1','nonexistingcolumn'=>'10'] ];
+    $this->setExpectedException('Wax\Db\Exception\DBStructureException', null, 100);
+    $backend->save($save_data);
+  }
+  
+  public function test_invalid_int_value() {
+    $backend = new SQLBackend($this->settings);
+    $save_data = ['data'=>['id'=>55,'key'=>'Test1','value'=>'thisshouldbe aninteger'] ];
+    $this->setExpectedException('Wax\Db\Exception\DBStructureException', null, 101);
+    $backend->save($save_data);
+  }
  
-
+  public function test_value_overflow() {
+    $backend = new SQLBackend($this->settings);
+    $save_data = ['data'=>['id'=>55,'key'=>str_pad('Test1',300,"x"),'value'=>10] ];
+    $this->setExpectedException('Wax\Db\Exception\DBStructureException', null, 102);
+    $backend->save($save_data);
+    echo $backend->last_query();
+  }
   
   
 
