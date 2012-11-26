@@ -6,7 +6,13 @@ class SyncTest extends \PHPUnit_Framework_TestCase {
   
   public $settings = [];
   
-  public $schema_1;
+  public $schema_1 = [
+    'id'        =>['maxlenth'=>60,'data_type'=>'string','primary'=>true,'col_name'=>'id'],
+    'testchar'  =>['maxlenth'=>255,'data_type'=>'string','col_name'=>'testchar'],
+    'testtext'  =>['data_type'=>'text','col_name'=>'testtext'],
+    'testfloat' =>['data_type'=>'float','col_name'=>'testfloat'],
+    'testdate'  =>['data_type'=>'date_and_time','col_name'=>'testdate']
+  ];
 
 
   public function setup() {
@@ -16,14 +22,6 @@ class SyncTest extends \PHPUnit_Framework_TestCase {
     $this->settings["db"]['password'] = $GLOBALS['db_password'];
     $this->settings["db"]['name'] = $GLOBALS['db_name'];
     $this->settings["db"]['port'] = $GLOBALS['db_port'];
-    
-    $this->schema_1 = [
-        'id'        =>function() {return (object)['maxlenth'=>60,'data_type'=>'string','primary'=>true,'col_name'=>'id']; },
-        'testchar'  =>function() {return (object)['maxlenth'=>255,'data_type'=>'string','col_name'=>'testchar']; },
-        'testtext'  =>function() {return (object)['data_type'=>'text','col_name'=>'testtext']; },
-        'testfloat' =>function() {return (object)['data_type'=>'float','col_name'=>'testfloat']; },
-        'testdate'  =>function() {return (object)['data_type'=>'date_and_time','col_name'=>'testdate']; },
-      ];
   }
   
   public function teardown() {

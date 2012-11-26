@@ -78,11 +78,11 @@ class MysqlSync {
       $col_exists = false;
       $col_changed = false;
       foreach($db_cols as $key=>$col) {
-        if($col["COLUMN_NAME"]==$field->col_name) {
+        if($col["COLUMN_NAME"]==$field["col_name"]) {
           $col_exists = true;
-          if($col["COLUMN_DEFAULT"] != $field->default) $col_changed = "default";
-          if($col["IS_NULLABLE"]=="NO" && $field->null) $col_changed = "now null";
-          if($col["IS_NULLABLE"]=="YES" && !$field->null) $col_changed = "now not null";
+          if($col["COLUMN_DEFAULT"] != $field["default"]) $col_changed = "default";
+          if($col["IS_NULLABLE"]=="NO" && $field["null"]) $col_changed = "now null";
+          if($col["IS_NULLABLE"]=="YES" && !$field["null"]) $col_changed = "now not null";
         }
       }
       if($col_exists==false){
@@ -112,8 +112,7 @@ class MysqlSync {
   public function create_table($table, $schema) {
     $primary = false;
     foreach($schema as $field) {
-      if(is_callable($field)) $field = $field();
-      if(isset($field->primary) && $field->primary ===true) $primary = $field;
+      if(isset($field["primary"]) && $field["primary"] ===true) $primary = $field;
     }
     
     $sql = "CREATE TABLE IF NOT EXISTS `{$table}` (";
@@ -135,35 +134,39 @@ class MysqlSync {
   }
 
   public function column_sql($field) {
-    $sql = "`{$field->col_name}`";
-    if(!$type = $field->data_type) $type = "string";
+    $sql = "`{$field['col_name']}`";
+    if(!isset($field["data_type"])) $type = "string";
+    else $type = $field["data_type"];
     $sql.=" ".$this->data_types[$type];
-    if($type == "string" && !isset($field->maxlength)) $sql.= "(255) ";
-    elseif($field->maxlength) $sql.= "({$field->maxlength}) ";
+
+    if($type == "string" && !isset($field["maxlength"])) $sql.= "(255) ";
+    elseif(isset($field["maxlength"])) $sql.= "(".$field['maxlength'].") ";
     
-    if(isset($field->null)) $sql.=" NULL";
+    if(isset($field["null"])) $sql.=" NULL";
     else $sql.=" NOT NULL";
     
-    if(isset($field->default) || isset($field->database_default)) $sql.= " DEFAULT ".($field->database_default !== null?$field->database_default:"'$field->default'");
-    if(isset($field->auto)) $sql.= " AUTO_INCREMENT";
-    if(isset($field->primary)) $sql.=" PRIMARY KEY";
+    if(isset($field["default"]) || isset($field["database_default"])) {
+      $sql.= " DEFAULT ".( $field["database_default"] !== null ? $field["database_default"]: "'".$field["default"]."'");
+    }
+    if(isset($field["auto"])) $sql.= " AUTO_INCREMENT";
+    if(isset($field["primary"])) $sql.=" PRIMARY KEY";
     return $sql;
   }
 
   public function add_column($field, $table) {
-    if(!$field->col_name) return false;
+    if(!isset($field["col_name"])) return false;
     $sql = "ALTER TABLE `$table` ADD ";
     $sql.= $this->column_sql($field);
     $this->db()->exec($sql);
-    $this->log("Added column {$field->col_name} to {$table}");    
+    $this->log("Added column {$field['col_name']} to {$table}");    
   }
 
   public function alter_column($field, $table) {
-    if(!$field->col_name) return false;
+    if(!isset($field["col_name"])) return false;
     $sql = "ALTER TABLE `$table` MODIFY ";
     $sql.= $this->column_sql($field);
     $this->db()->exec($sql);
-    $this->log("Updated column {$field->col_name} in {$table}");    
+    $this->log("Updated column {$field['col_name']} in {$table}");    
   }
   
   
