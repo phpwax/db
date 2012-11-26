@@ -113,9 +113,7 @@ class SyncTest extends \PHPUnit_Framework_TestCase {
     $engine->sync_columns(["table"=>"synctest", "schema"=>$this->schema]);
     $columns = $engine->view_columns("synctest");
     foreach($columns as $col) if($col["COLUMN_NAME"]=="testtext") $test = $col;
-    
     $this->assertEquals('varchar', $test["DATA_TYPE"]);
-    
   }
   
   
