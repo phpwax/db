@@ -9,7 +9,7 @@ trait Configuration{
     if(isset($this->_settings[$key]) && is_callable($this->_settings[$key])) return call_user_func($this->_settings[$key]);
     if(isset($this->_settings[$key])) return $this->_settings[$key];
     
-    if(is_callable(self::$_defaults[$key])) return call_user_func(self::$_defaults[$key]);
+    if(isset(self::$_defaults[$key]) && is_callable(self::$_defaults[$key])) return call_user_func(self::$_defaults[$key]);
     if(isset(self::$_defaults[$key])) return self::$_defaults[$key];
     return false;
   }
