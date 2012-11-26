@@ -1,7 +1,7 @@
 <?php
 namespace Wax\Db\Backends;
 use Wax\Db\Backend;
-use Wax\Db\Configuration;
+use Wax\Behaviours\Configurable;
 use Wax\Db\Exception\DBException;
 use Wax\Db\Exception\DBStructureException;
 use \ORM as Query;
@@ -14,7 +14,6 @@ class SQLBackend extends Backend {
   public $table       = false;
   public $primary_key = 'id';
   public $db          = false;
-  public $settings    = false;
   
   
   public function __construct($settings) {
@@ -23,7 +22,7 @@ class SQLBackend extends Backend {
   }
   
   public function setup_db() {
-    $settings = $this->settings("db");
+    $settings = $this->get_setting("db");
     if(isset($settings['socket']) && strlen($settings['socket'])>2) {
 			$dsn="{$settings['type']}:unix_socket={$settings['socket']};dbname={$settings['name']}"; 
 		} else {
