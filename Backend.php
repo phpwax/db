@@ -1,6 +1,8 @@
 <?php
 namespace Wax\Db;
 use Wax\Db\Exception\BackendSupportException;
+use Wax\Behaviours\Configurable;
+use Wax\Behaviours\Loggable;
 
 /**
  * A mainly abstract definition of a db backend.
@@ -11,13 +13,15 @@ use Wax\Db\Exception\BackendSupportException;
  **/
 class Backend {
   
+  use Configurable;
+  use Loggable;
+  
   public $query = [
     "filter"         => [],
     "order"          => false,
     "limit"          => false,
     "offset"         => 0,
     "raw"            => false,
-  	"is_paginated"   => false,
   	"having"         => false,
   	"select"         => []
   ];
@@ -26,7 +30,7 @@ class Backend {
   public $settings   = false;
   
   public function __construct($settings=[]) {
-    $this->settings = $settings;
+    $this->configure($settings);
   }
 
   
@@ -47,15 +51,40 @@ class Backend {
   }
   
   /**
-   * This method is protected and is the single point of query execution in the class
-   * All it should look up is the connection and the query paramters.
+   * The following methods are the standard backend interface.
    *
-   * It returns an array of results.
+   * method all()
+   * Returns an array of results.
    *
+   * @param Array $query required
    * @return Array
    **/
-  protected function exec() {
+  public function all($query=[]) {}
     
-  }
+  /**
+   * Returns an associative array of a single piece of data.
+   *
+   * @param Array $query required
+   * @return Array
+   **/
+  public function first($query=[]) {}
+    
+  /**
+   * Returns an associative array of a single piece of data.
+   * A shortcut method for key based lookup.
+   *
+   * @param String $key required
+   * @return Array
+   **/
+  public function find($key) {}
+    
+  /**
+   * Returns an associative array of a single piece of data.
+   * A shortcut method for key based lookup.
+   *
+   * @param Array $options['data'] required
+   * @return mixed
+   **/
+  public function save($options) {}
 
 } 

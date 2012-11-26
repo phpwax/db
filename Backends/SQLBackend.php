@@ -1,17 +1,12 @@
 <?php
 namespace Wax\Db\Backends;
 use Wax\Db\Backend;
-use Wax\Behaviours\Configurable;
-use Wax\Behaviours\Loggable;
 
 use Wax\Db\Exception\DBException;
 use Wax\Db\Exception\DBStructureException;
 use \ORM as Query;
 
 class SQLBackend extends Backend {
-  
-  use Configurable;
-  use Loggable;
   
   public $table       = false;
   public $primary_key = 'id';
@@ -119,7 +114,6 @@ class SQLBackend extends Backend {
           break;
         
       }
-      die($e->getCode());
       throw $e;
     }
     if($success) $result = $saver->as_array();
@@ -144,15 +138,6 @@ class SQLBackend extends Backend {
     $pdo->exec($query);
   }
 
-  
-  public function group_delete($options) {
-
-  }
-  
-  
-  public function group_update($options) {
-    
-  }
   
   /**
    * Protected internal methods
