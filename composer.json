@@ -13,7 +13,8 @@
     ],
     "require": {
         "php": ">=5.3.3",
-        "j4mie/idiorm": "dev-master"
+        "j4mie/idiorm": "dev-master",
+        "phpwax/behaviours": "1.0.x-dev"
     },
     "autoload": {
         "psr-0": { "Wax\\Db": "" }

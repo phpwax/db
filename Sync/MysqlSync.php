@@ -1,12 +1,14 @@
 <?php
 namespace Wax\DB\Sync;
-use Wax\Db\Configuration;
+use Wax\Behaviours\Configurable;
+use Wax\Behaviours\Loggable;
 
 class MysqlSync {
  
-  use Configuration;
+  use Configurable;
+  use Loggable;
+  
   public static $_db = false;
-  public $logger = false;
   
 	public $data_types = [
     'string' => "varchar",
@@ -32,7 +34,7 @@ class MysqlSync {
   
   protected function setup_db() {
     if (!is_object(self::$_db)) {
-      $settings = $this->settings("db");
+      $settings = $this->get_setting("db");
       if(isset($settings['socket']) && strlen($settings['socket'])>2) {
   			$dsn="{$settings['type']}:unix_socket={$settings['socket']};dbname={$settings['name']}"; 
   		} else {
@@ -48,14 +50,7 @@ class MysqlSync {
   protected function db() {
     return self::$_db;
   }
-  
-  public function set_logger($logger) {
-    $this->logger = $logger;
-  }
-  
-  public function log($message, $level=\LOG_INFO) {
-    if(is_callable([$this->logger, "log"])) $this->logger->log($message,$level);
-  }
+
   
   /**
    * The main engine of the class parameters
@@ -109,7 +104,7 @@ class MysqlSync {
   }
 
   public function view_columns($table) {
-    $db = $this->settings("name");
+    $db = $this->get_setting("name");
     $stmt = $this->db()->exec("SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA ='{$db}' AND TABLE_NAME = '{$table}'");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
@@ -124,9 +119,9 @@ class MysqlSync {
     $sql = "CREATE TABLE IF NOT EXISTS `{$table}` (";
     $sql .= $this->column_sql($primary);
     
-    $engine = $this->settings("default_db_engine");
-    $charset = $this->settings("default_db_charset");
-    $collate = $this->settings("default_db_collate");
+    $engine = $this->get_setting("default_db_engine");
+    $charset = $this->get_setting("default_db_charset");
+    $collate = $this->get_setting("default_db_collate");
     
     $sql.=") ENGINE=".$engine." DEFAULT CHARSET=".$charset." COLLATE=".$collate;
     $this->db()->exec($sql);
