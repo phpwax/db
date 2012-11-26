@@ -29,22 +29,12 @@ class MysqlSync {
       'default_db_collate'=>"utf8_unicode_ci"
     ]);
     $this->configure($settings);
-    $this->setup_db();
+    if(!self::$_db && $db = $this->get_setting("driver")) $this->set_db($db);
+    elseif(!self::$_db) throw new \Exception(__NAMESPACE__. __CLASS__." requires a database connection.");
   }
   
-  protected function setup_db() {
-    if (!is_object(self::$_db)) {
-      $settings = $this->get_setting("db");
-      if(isset($settings['socket']) && strlen($settings['socket'])>2) {
-  			$dsn="{$settings['type']}:unix_socket={$settings['socket']};dbname={$settings['name']}"; 
-  		} else {
-  			$dsn="{$settings['type']}:host={$settings['host']};port={$settings['port']};dbname={$settings['name']}";
-  		}
-      
-      $db = new \PDO($dsn, $settings["username"], $settings["password"]);
-      $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-      self::$_db = $db;
-    }
+  static public function set_db($db) {
+    self::$_db = $db;
   }
   
   protected function db() {
@@ -59,43 +49,55 @@ class MysqlSync {
    *
    **/
   
-  public function sync($options = []) {
+  public function sync_table($options = []) {
+    $schema = $options["schema"];
+    $table  = $options["table"];
     
     $tables = $this->view_tables();
     $exists = false;
-    foreach($tables as $table) {
-      if($table == $options['table']) $exists=true;
+    foreach($tables as $existing_table) {
+      if($table == $existing_table) $exists=true;
     }
     if(!$exists) {
       $this->create_table($table, $schema);
     }
     
-    $db_cols = $this->view_columns($model);
     
+    $this->log("Table {$options['table']} is synchronised");
+  }
+  
+  /**
+   * The main engine of the class parameters
+   * @param required $options['table']
+   * @param required $options['schema']
+   *
+   **/
+  
+  public function sync_columns($options=[]) {
     $schema = $options["schema"];
+    $table  = $options["table"];
+    $db_cols = $this->view_columns($table);
     
-    foreach($schema as $field_name=>$field) {
+    
+    foreach($schema as $field) {
       $col_exists = false;
       $col_changed = false;
       foreach($db_cols as $key=>$col) {
         if($col["COLUMN_NAME"]==$field["col_name"]) {
           $col_exists = true;
-          if($col["COLUMN_DEFAULT"] != $field["default"]) $col_changed = "default";
-          if($col["IS_NULLABLE"]=="NO" && $field["null"]) $col_changed = "now null";
-          if($col["IS_NULLABLE"]=="YES" && !$field["null"]) $col_changed = "now not null";
+          if(isset($field["default"]) && $col["COLUMN_DEFAULT"] != $field["default"]) $col_changed = "default";
+          if(isset($field["null"]) && $col["IS_NULLABLE"]=="NO" && $field["null"]==true) $col_changed = "now null";
+          if(isset($field["null"]) && $col["IS_NULLABLE"]=="YES" && $field["null"]==false) $col_changed = "now not null";
         }
       }
       if($col_exists==false){
-        $this->add_column($field, $model, true);
+        $this->add_column($field, $table);
       }
       if($col_changed) { 
-        $this->alter_column($field, $model, true);
+        $this->alter_column($field, $table);
       }
     }
-    $table = get_class($model);
-    $output .= "Table {$table} is now synchronised";
-    $this->log($output);
-    
+
   }
 
 
@@ -104,9 +106,9 @@ class MysqlSync {
   }
 
   public function view_columns($table) {
-    $db = $this->get_setting("name");
-    $stmt = $this->db()->exec("SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA ='{$db}' AND TABLE_NAME = '{$table}'");
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $db = $this->get_setting("db")["name"];
+    $sql = "SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA ='{$db}' AND TABLE_NAME = '{$table}'";
+    return $this->db()->query($sql)->fetchAll(\PDO::FETCH_ASSOC);
   }
 
   public function create_table($table, $schema) {
@@ -142,11 +144,11 @@ class MysqlSync {
     if($type == "string" && !isset($field["maxlength"])) $sql.= "(255) ";
     elseif(isset($field["maxlength"])) $sql.= "(".$field['maxlength'].") ";
     
-    if(isset($field["null"])) $sql.=" NULL";
+    if(isset($field["null"]) && $field["null"] !==false) $sql.=" NULL";
     else $sql.=" NOT NULL";
     
     if(isset($field["default"]) || isset($field["database_default"])) {
-      $sql.= " DEFAULT ".( $field["database_default"] !== null ? $field["database_default"]: "'".$field["default"]."'");
+      $sql.= " DEFAULT ".( isset($field["database_default"]) ? $field["database_default"]: "'".$field["default"]."'");
     }
     if(isset($field["auto"])) $sql.= " AUTO_INCREMENT";
     if(isset($field["primary"])) $sql.=" PRIMARY KEY";

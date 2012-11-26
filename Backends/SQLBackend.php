@@ -2,6 +2,8 @@
 namespace Wax\Db\Backends;
 use Wax\Db\Backend;
 use Wax\Behaviours\Configurable;
+use Wax\Behaviours\Loggable;
+
 use Wax\Db\Exception\DBException;
 use Wax\Db\Exception\DBStructureException;
 use \ORM as Query;
@@ -9,11 +11,11 @@ use \ORM as Query;
 class SQLBackend extends Backend {
   
   use Configurable;
+  use Loggable;
   
-  public $logger      = false;
   public $table       = false;
   public $primary_key = 'id';
-  public $db          = false;
+  static public $db  = false;
   
   
   public function __construct($settings) {
@@ -28,35 +30,49 @@ class SQLBackend extends Backend {
 		} else {
 			$dsn="{$settings['type']}:host={$settings['host']};port={$settings['port']};dbname={$settings['name']}";
 		}
-    $settings["logging"]= true;
-    $settings["connection_string"]=$dsn;
-    $this->table = $settings['table'];
+    $driver_command = array(\PDO::MYSQL_ATTR_INIT_COMMAND => "SET SESSION sql_mode='TRADITIONAL'");
+    $db = new \PDO($dsn, $settings["username"], $settings["password"], $driver_command);
+    $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+    self::$db = $db;
+
+    if(isset($settings['table'])) $this->table = $settings['table'];
     if(isset($settings['primary_key'])) $this->primary_key = $settings['primary_key'];
-    $settings["driver_options"] = array(\PDO::MYSQL_ATTR_INIT_COMMAND => "SET SESSION sql_mode='TRADITIONAL'");
-    Query::configure($settings);
+
+    $query["logging"]= true;
+    Query::set_db($db);
+    Query::configure($query);
   }
 
-  
   public function db() {
+    return self::$db;
+  }
+  
+  public function query() {
     if(!isset($this->table)) throw new \Exception("Database Error", "Database queries require a table to be set");
     return Query::for_table($this->table);
   }
   
   
+  
    
   public function all($query=[]) {
     $query = $this->build_query($query);
-    return $query->find_many();
+    $result = $query->find_many();
+    $this->log($this->last_query());
+    return $result;
   }
   
   public function first($query=[]) {
     $query = $this->build_query($query);
-    return $query->find_one();
+    $result = $query->find_one();
+    $this->log($this->last_query());
+    return $result;
   }
   
   public function find($key) {
-    $finder = $this->db();
+    $finder = $this->query();
     $result = $finder->find_one($key);
+    $this->log($this->last_query());
     if($result) return $result->as_array();
     return false;
   }
@@ -73,7 +89,7 @@ class SQLBackend extends Backend {
     if(!isset($options['data'])) throw new \InvalidArgumentException("Database saves require a data array to be passed");
     
     if(array_key_exists($this->primary_key, $options['data'])) {
-      $existing = $this->db()->find_one($options['data'][$this->primary_key]);
+      $existing = $this->query()->find_one($options['data'][$this->primary_key]);
     } else $existing = false;
     
     $success = false;
@@ -82,7 +98,7 @@ class SQLBackend extends Backend {
       if($existing) {
         foreach($options['data'] as $k=>$v) $existing->$k = $v;
         $saver = $existing;        
-      } else $saver = $this->db()->create($options['data']);
+      } else $saver = $this->query()->create($options['data']);
       $success = $saver->save();
     } catch (\PDOException $e) {
 			switch($e->getCode()) {
@@ -106,7 +122,9 @@ class SQLBackend extends Backend {
       die($e->getCode());
       throw $e;
     }
-    if($success) return $saver->as_array();
+    if($success) $result = $saver->as_array();
+    $this->log($this->last_query());
+    if($success) return $result;
     return false;
   }
   
@@ -122,7 +140,7 @@ class SQLBackend extends Backend {
   
   public function truncate() {
     $query = "TRUNCATE `".$this->table."`";
-    $pdo = $this->db()->get_db();
+    $pdo = $this->db();
     $pdo->exec($query);
   }
 
@@ -142,7 +160,7 @@ class SQLBackend extends Backend {
    * @return Finder object
    **/
   protected function build_query($query) {
-    $finder = $this->db();
+    $finder = $this->query();
     
     if(isset($query['raw'])) return $finder->raw_query($query['raw']);
     
