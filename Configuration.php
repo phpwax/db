@@ -6,7 +6,7 @@ trait Configuration{
   protected $_settings;
   
   public function settings($key){
-    if(is_callable($this->_settings[$key])) return call_user_func($this->_settings[$key]);
+    if(isset($this->_settings[$key]) && is_callable($this->_settings[$key])) return call_user_func($this->_settings[$key]);
     if(isset($this->_settings[$key])) return $this->_settings[$key];
     
     if(is_callable(self::$_defaults[$key])) return call_user_func(self::$_defaults[$key]);
