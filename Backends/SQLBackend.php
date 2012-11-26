@@ -8,7 +8,7 @@ use \ORM as Query;
 
 class SQLBackend extends Backend {
   
-  use Configuration;
+  use Configurable;
   
   public $logger      = false;
   public $table       = false;
