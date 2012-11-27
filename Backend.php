@@ -5,13 +5,13 @@ use Wax\Behaviours\Configurable;
 use Wax\Behaviours\Loggable;
 
 /**
- * A mainly abstract definition of a db backend.
+ * An abstract definition of a storage backend.
  * Functionality provides enough hooks to receive data and schema from model.
  *
  * @package wax/db
  * @author Ross Riley
  **/
-class Backend {
+abstract class Backend {
   
   use Configurable;
   use Loggable;
@@ -36,15 +36,15 @@ class Backend {
   
   public function __call($method, $params) {
     if(isset($this->query[$method])) {
-      if(count($params)==1) $this->query[$method]=$params[0];
-      elseif(is_array($this->query[$method])) $this->query[$method][]=$params;
+      if(is_array($this->query[$method])) $this->query[$method][]=$params;
+      elseif(count($params)==1) $this->query[$method]=$params[0];
       else $this->query[$method]=$params;
       return $this;
     } else {
       throw new BackendSupportException;
     }
-    
   }
+  
   
   public function __get($name) {
     if(isset($this->query[$name])) return $this->query[$name];
@@ -59,7 +59,7 @@ class Backend {
    * @param Array $query required
    * @return Array
    **/
-  public function all($query=[]) {}
+  public function all() {}
     
   /**
    * Returns an associative array of a single piece of data.
